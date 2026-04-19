@@ -1,0 +1,3 @@
+member 1: Malte Sparenborg 
+member 2: Luis Melzer
+member 3: Nick Hermann
