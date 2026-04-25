@@ -86,7 +86,7 @@ class PolicyIteration(AbstractAgent):
             The selected action and an empty info dictionary.
         """
         # TODO: Return the action according to current policy
-        raise NotImplementedError("predict_action() is not implemented.")
+        return self.pi[observation]
 
     def update_agent(self, *args: tuple, **kwargs: dict) -> None:
         """Run policy iteration to compute the optimal policy and state-action values."""
@@ -155,10 +155,36 @@ def policy_evaluation(
     np.ndarray
         The evaluated value function V[s] for all states.
     """
+    # number of states
     nS = R_sa.shape[0]
     V = np.zeros(nS)
 
     # TODO: implement Policy Evaluation for all states
+
+    while True:
+        V_old = V.copy()
+        delta = 0
+
+        for s in range(nS):
+            action_for_state = pi[s]
+            reward_for_state = R_sa[s]
+            # add reward of current state to value
+            V[s] = reward_for_state[action_for_state]
+
+            expected_future_value = 0
+
+            # alle möglichen folgezustände hinzufügen
+            for s_next in range(nS):
+                expected_future_value += (
+                    gamma * T[s, action_for_state, s_next] * V_old[s_next]
+                )
+
+            V[s] = R_sa[s, action_for_state] + gamma * expected_future_value
+
+            delta = max(delta, np.abs(V[0] - V_old[s]))
+
+        if delta < epsilon:
+            break
 
     return V
 
