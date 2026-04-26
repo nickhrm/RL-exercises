@@ -61,6 +61,8 @@ def train(cfg: DictConfig) -> float:
         agent = RandomAgent(env)
     elif cfg.agent == "policy_iteration":
         agent = PolicyIteration(env, **cfg.agent_kwargs)
+    elif cfg.agent == "value_iteration":
+        agent = ValueIteration(env, **cfg.agent_kwargs)
     else:
         raise NotImplementedError
 
