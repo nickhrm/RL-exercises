@@ -59,8 +59,9 @@ def train(cfg: DictConfig) -> float:
         return train_sb3(env, cfg)
     elif cfg.agent == "random":
         agent = RandomAgent(env)
+    elif cfg.agent == "policy_iteration":
+        agent = PolicyIteration(env, **cfg.agent_kwargs)
     else:
-        # TODO: add your agent options here
         raise NotImplementedError
 
     buffer_cls = eval(cfg.buffer_cls)
