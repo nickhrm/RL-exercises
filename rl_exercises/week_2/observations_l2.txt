@@ -1,0 +1,10 @@
+1. What happens if you only have access to step() instead of the dynamics and reward? 
+
+We lose the transition matrix T and the reward for each action. step() only gives us one sample at a time, not the full picture.
+We cannot use the Bellman update anymore because it needs both T and R. Instead we have to learn from the samples directly.
+
+
+2. Do both methods still work? 
+
+No
+->Policy iteration and value iteration both need T and R in their update step. Without them, neither method can run

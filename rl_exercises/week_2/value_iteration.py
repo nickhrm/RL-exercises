@@ -8,6 +8,26 @@ from rich import print as printr
 from rl_exercises.agent import AbstractAgent
 from rl_exercises.environments import MarsRover
 
+#  Task 3 questions:
+#
+# 1.What happens with different initial policies?
+#    Value iteration has no initial policy. We start with  V = np.zeros and only build the policy at the end. So nothing changes if we picked another start.
+#
+# 2.Will you always converge to the same policy?
+#    Not always. V always lands on the same numbers, but if two actions tie in Q the seed picks the winner. With P=0.5 every state is tied, so a new seed gives a new policy.
+#
+# 3. What if you vary gamma?
+#    Gamma controls how much the future matters. It scales V a lot.
+#    Results from our runs (P=0.5 env, seed=333):
+#      - gamma=0.1:  V = [0.55, 0.54, 0.29, 5.29, 5.54]
+#                    Only the next reward really counts. State 2's value is ~0 because the goal at state 4 is two steps away.
+#      - gamma=0.9:  V = [13.6, 15.6, 19.8, 28.5, 32.4]
+#                    Smooth rise of values toward the goal.
+#      - gamma=0.99: V = [208, 211, 218, 229, 234]
+#                   Very large values, but states look almost equally good because future rewards barely shrink.
+#    For the deterministic env, the optimal policy is the same for any gamma.
+#    For the 50/50 env, all actions stay tied so the policy is random anyway.
+
 
 class ValueIteration(AbstractAgent):
     """Agent that computes an optimal policy via Value Iteration.
@@ -36,6 +56,8 @@ class ValueIteration(AbstractAgent):
         self,
         env: MarsRover | gymnasium.Env,
         gamma: float = 0.9,
+        # gamma: float = 0.1,
+        # gamma: float = 0.99,
         seed: int = 333,
         **kwargs: dict,
     ) -> None:
@@ -64,14 +86,15 @@ class ValueIteration(AbstractAgent):
         if self.policy_fitted:
             return
 
-        # TODO: Call value_iteration() with the MDP components
-        V_opt, pi_opt = None, None  # placeholder
+        V_opt, pi_opt = value_iteration(
+            T=self.T, R_sa=self.R_sa, gamma=self.gamma, seed=self.seed
+        )
 
         self.V = V_opt
         self.pi = pi_opt
         printr("Converged V:", self.V)
         printr("Derived policy π:", self.pi)
-        # self.policy_fitted = True # TODO: uncomment this after implementation
+        self.policy_fitted = True  # uncomment this after implementation
 
     def predict_action(
         self,
@@ -83,8 +106,8 @@ class ValueIteration(AbstractAgent):
         if not self.policy_fitted:
             self.update_agent()
 
-        # TODO: Return action from learned policy
-        raise NotImplementedError("predict_action() is not implemented.")
+        action = int(self.pi[observation])
+        return action, {}
 
 
 def value_iteration(
@@ -124,11 +147,26 @@ def value_iteration(
     """
     n_states, n_actions = R_sa.shape
     V = np.zeros(n_states, dtype=float)
-    # rng = np.random.default_rng(seed)  uncomment this
+    rng = np.random.default_rng(seed)
     pi = None
 
-    # TODO: update V using the Q values until convergence
+    while True:
+        Q = np.zeros((n_states, n_actions))
+        for s in range(n_states):
+            for a in range(n_actions):
+                # Q(s,a)
+                Q[s, a] = R_sa[s, a] + gamma * np.dot(T[s, a], V)
+        # Bellman optimality
+        V_new = np.max(Q, axis=1)
+        diff = np.max(np.abs(V_new - V))
+        V = V_new
+        if diff < epsilon:
+            break
 
-    # TODO: Extract the greedy policy from V and update pi
+    # tie-breaking: pick a random argmax per state (otherwise np.argmax returns lowest index)
+    pi = np.zeros(n_states, dtype=int)
+    for s in range(n_states):
+        best = np.flatnonzero(Q[s] == Q[s].max())
+        pi[s] = int(rng.choice(best))
 
     return V, pi
